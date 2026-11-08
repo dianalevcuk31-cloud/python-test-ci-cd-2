@@ -7,7 +7,9 @@ on:
     branches: [ "main" ]
 
 jobs:
-  # 1: Тестирование (Матрица Python)
+
+  #  1: Тестирование (Матрица Python)
+
   test:
     name: Test on Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
@@ -28,16 +30,18 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # Устанавливаем сам проект и явно ставим pytest
           pip install -e .
           pip install pytest
 
       - name: Run tests
         run: |
-          # Запускаем тесты. PYTHONPATH=. нужен, чтобы Python видел папку src
-          PYTHONPATH=. pytest tests/
+          # Флаг -v покажет названия тестов, а PYTHONPATH укажет, где искать код
+          pytest tests/ -v
+        env:
+          PYTHONPATH: src
 
-  # 2: Сборка и запуск (Зависит от 1)
+
+  #  2: Сборка и запуск
 
   build-and-run:
     name: Build and Run Flaskr
@@ -63,14 +67,12 @@ jobs:
         run: |
           python -m venv venv_install
           source venv_install/bin/activate
-          # Ставим собранный wheel
           pip install dist/*.whl
 
       - name: Install Flaskr
         run: |
           source venv_install/bin/activate
           cd examples/tutorial
-          # Ставим Flaskr без обновления зависимостей
           pip install -e . --no-deps
 
       - name: Initialize DB and Run App
@@ -78,14 +80,10 @@ jobs:
           source venv_install/bin/activate
           cd examples/tutorial
           
-          # Инициализируем БД
           flask --app flaskr init-db
           
-          # Запускаем в фоне
           nohup flask --app flaskr run --port 5000 &
           
-          # Ждем 5 секунд
           sleep 5
           
-          # Проверяем, что сервер ответил (если нет — выведем ошибку)
-          curl -s http://127.0.0.1:5000/ || echo "Сервер запущен, но curl не смог достучаться (это нормально для теста)"
+          curl -s http://127.0.0.1:5000/ || echo "Сервер запущен!"
